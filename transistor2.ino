@@ -10,7 +10,7 @@ WiFiClient client;
 MAX30105 particleSensor;
 uint32_t irBuffer[100];
 uint32_t redBuffer[100];
-int32_t bufferLength = 100;
+int32_t bufferLength = 10;
 int32_t spo2;
 int8_t validSPO2;
 int32_t heartRate;
@@ -81,21 +81,13 @@ void loop() {
   connexion();
   lireCapteur();
 
-  if (millis() - dernierEnvoi >= 2000)
+ /*if (millis() - dernierEnvoi >= 2000)
   {
-    dernierEnvoi = millis();
+    dernierEnvoi = millis();*/
 
     envoyerDonnees();
-  }
+  //}
   
-  avancer();
-  delay(1000);
-  arreter();
-  delay(3000);
-  gauche();
-  delay(1000);
-  droite();
-  delay(1000);
 }
 
 void avancer() {
@@ -104,7 +96,7 @@ void avancer() {
   digitalWrite(IN2,LOW);
   digitalWrite(IN3,HIGH);
   digitalWrite(IN4,LOW);
-  vitesse(10);
+  vitesse(80);
 
 }
 
@@ -114,7 +106,7 @@ void reculer() {
   digitalWrite(IN2,HIGH);
   digitalWrite(IN3,LOW);
   digitalWrite(IN4,HIGH);
-  vitesse(10);
+  vitesse(80);
 
 }
 
@@ -124,7 +116,7 @@ void gauche() {
   digitalWrite(IN2,LOW);
   digitalWrite(IN3,HIGH);
   digitalWrite(IN4,LOW);
-  vitesse(10);
+  vitesse(80);
 
 }
 
@@ -134,7 +126,7 @@ void droite() {
   digitalWrite(IN2,LOW);
   digitalWrite(IN3,LOW);
   digitalWrite(IN4,LOW);
-  vitesse(10);
+  vitesse(80);
 
 }
 
@@ -187,51 +179,67 @@ void evite_obstacle() {
   }
 }
 
-void connexion() {
-  WiFiClient client = server.available();
+void connexion()
+{
+  // Chercher un nouveau client seulement
+  // si aucun client n'est actuellement connecté
 
-  if(client) {
-    Serial.println("PC connecter");
-    while(client.connected())
+  if (!client || !client.connected())
+  {
+    client = server.available();
+
+    if (client)
     {
-      if(client.available())
-      {
-        String commande = client.readStringUntil('\n');
-        commande.trim();
-        Serial.println(commande);
-        execute_commande(commande);
-      }
-    }      
-    client.stop();
-    Serial.println("PC deconnecter");
+      Serial.println("PC connecte !");
+    }
+  }
+
+  // Si Qt a envoyé une commande
+  if (client && client.connected() && client.available())
+  {
+    String commande = client.readStringUntil('\n');
+
+    commande.trim();
+
+    Serial.print("Commande reçue : ");
+    Serial.println(commande);
+
+    execute_commande(commande);
   }
 }
 
-void execute_commande(String commande) 
+void execute_commande(String commande)
 {
-  
-  if(commande == "avancer") {
-     evite_obstacle();
-     avancer();
-    }
-    else if(commande == "reculer") {
-          evite_obstacle();
-           reculer();
-        }
-        else if(commande == "droite") {
-           evite_obstacle();
-           droite();
-        }
-        else if(commande == "arreter") {
-          evite_obstacle();
-          arreter();
-        }
-        else {
-           evite_obstacle();
-           gauche();
-        }
-}
+  if (commande == "avancer")
+  {
+    evite_obstacle();
+  }
 
+  else if (commande == "reculer")
+  {
+    reculer();
+  }
+
+  else if (commande == "droite")
+  {
+    droite();
+  }
+
+  else if (commande == "gauche")
+  {
+    gauche();
+  }
+
+  else if (commande == "arreter")
+  {
+    arreter();
+  }
+
+  else
+  {
+    Serial.println("Commande inconnue !");
+  }
+}
 void lireCapteur()
 {
   static bool nouveauBloc = true;
